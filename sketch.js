@@ -7,6 +7,7 @@ var particles = [];
 var particles2 = [];
 var flowfield;
 var indexk = 0;
+var baseParams = null;
 
 // Colors (Global to persist across restarts)
 var cr = fxrandRange(100, 200, 1);
@@ -19,16 +20,15 @@ var db = fxrandRange(100, 150, 1);
 function setup() {
   createCanvas(windowWidth, windowHeight);
   // fr = createP("");
-  initSketch();
+  restartWithNewBase();
   background(0);
 }
 
-function initSketch() {
-  // Randomize parameters for more variation
-  inc = fxrandRange(0.1, 5, 0.1); 
-  scl = fxrandRange(20, 150, 1);
-  magv = fxrandRange(0.1, 4, 0.1);
-  
+function initSketchFromBase() {
+  inc = baseParams.inc;
+  scl = baseParams.scl;
+  magv = baseParams.magv;
+
   cols = floor(windowWidth / scl);
   rows = floor(windowHeight / scl);
   flowfield = new Array(cols * rows);
@@ -38,53 +38,66 @@ function initSketch() {
   indexk = 0;
   zoff = 0;
 
-  // Variation in particle count
-  let numParticles = floor(fxrandRange(150, 300, 1));
-  
-  // Variation in distribution type
-  let distribution = fxrand();
+  let numParticles = baseParams.numParticles;
 
   for (var i = 0; i < numParticles; i++) {
-    let x, y;
-    if (distribution < 0.4) {
-       // Original-like linear distribution
-       x = (fxrand() * i) / 10 + windowWidth / 3;
-       y = (fxrand() * i) / 5 + windowHeight / 3;
-    } else if (distribution < 0.7) {
-       // Random distribution
-       x = fxrand() * windowWidth;
-       y = fxrand() * windowHeight;
-    } else {
-       // Circular distribution
-       let angle = fxrand() * TWO_PI;
-       let r = fxrand() * (windowHeight/3);
-       x = windowWidth/2 + r * cos(angle);
-       y = windowHeight/2 + r * sin(angle);
-    }
-    
+    let x = baseParams.positions1[i][0] * windowWidth;
+    let y = baseParams.positions1[i][1] * windowHeight;
     particles[i] = new Particle(cr, cg, cb, x, y, 0.1);
   }
 
   for (var i = 0; i < numParticles; i++) {
-    let x, y;
-    if (distribution < 0.4) {
-       x = (fxrand() * i) / 10 + windowWidth / 5;
-       y = (fxrand() * i) / 5 + windowHeight / 5;
-    } else if (distribution < 0.7) {
-       x = fxrand() * windowWidth;
-       y = fxrand() * windowHeight;
-    } else {
-       let angle = fxrand() * TWO_PI;
-       let r = fxrand() * (windowHeight/3);
-       x = windowWidth/2 + r * cos(angle);
-       y = windowHeight/2 + r * sin(angle);
-    }
+    let x = baseParams.positions2[i][0] * windowWidth;
+    let y = baseParams.positions2[i][1] * windowHeight;
     particles2[i] = new Particle(dr, dg, db, x, y, 0.1);
   }
 }
 
+function generateBaseParams() {
+  let params = {};
+  params.inc = fxrandRange(0.1, 5, 0.1);
+  params.scl = fxrandRange(20, 150, 1);
+  params.magv = fxrandRange(0.1, 4, 0.1);
+  params.numParticles = floor(fxrandRange(150, 300, 1));
+  params.distribution = fxrand();
+  params.positions1 = [];
+  params.positions2 = [];
+
+  for (var i = 0; i < params.numParticles; i++) {
+    let x1, y1, x2, y2;
+    if (params.distribution < 0.4) {
+      x1 = (fxrand() * i) / 10 + windowWidth / 3;
+      y1 = (fxrand() * i) / 5 + windowHeight / 3;
+      x2 = (fxrand() * i) / 10 + windowWidth / 5;
+      y2 = (fxrand() * i) / 5 + windowHeight / 5;
+    } else if (params.distribution < 0.7) {
+      x1 = fxrand() * windowWidth;
+      y1 = fxrand() * windowHeight;
+      x2 = fxrand() * windowWidth;
+      y2 = fxrand() * windowHeight;
+    } else {
+      let angle1 = fxrand() * TWO_PI;
+      let r1 = fxrand() * (min(windowWidth, windowHeight) / 3);
+      x1 = windowWidth / 2 + r1 * cos(angle1);
+      y1 = windowHeight / 2 + r1 * sin(angle1);
+      let angle2 = fxrand() * TWO_PI;
+      let r2 = fxrand() * (min(windowWidth, windowHeight) / 3);
+      x2 = windowWidth / 2 + r2 * cos(angle2);
+      y2 = windowHeight / 2 + r2 * sin(angle2);
+    }
+    params.positions1[i] = [x1 / windowWidth, y1 / windowHeight];
+    params.positions2[i] = [x2 / windowWidth, y2 / windowHeight];
+  }
+  return params;
+}
+
+function restartWithNewBase() {
+  baseParams = generateBaseParams();
+  initSketchFromBase();
+}
+
 function mousePressed() {
-  initSketch();
+  restartWithNewBase();
   background(0);
   loop();
 }
@@ -135,7 +148,10 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  initSketch();
+  if (!baseParams) {
+    baseParams = generateBaseParams();
+  }
+  initSketchFromBase();
   background(0);
   loop();
   push();
