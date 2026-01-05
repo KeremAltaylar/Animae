@@ -74,7 +74,7 @@ function Particle2(r, g, b, x, y, stw) {
   this.pos = createVector(this.xpos, this.ypos);
   this.vel = createVector(0, 20);
   this.acc = createVector(20, 0);
-  this.maxspeed = 5;
+  this.maxspeed = fxrandRange(2, 8, 0.1);
   this.prevPos = this.pos.copy();
 
   this.update = function () {
